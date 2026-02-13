@@ -71,7 +71,7 @@ const AdminOrders = () => {
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
-      <Link to="admin/dashboard" className="text-blue-500 hover:underline">
+      <Link to="/admin/dashboard" className="text-blue-500 hover:underline">
         ← Back to Admin Dashboard
       </Link>
       <div className="flex justify-between items-center mb-6">
