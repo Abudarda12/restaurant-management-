@@ -32,6 +32,7 @@ const QRGenerator = () => {
         type="number"
         placeholder="Enter Table Number"
         value={tableNum}
+        min={1}
         onChange={(e) => setTableNum(e.target.value)}
         className="border-2 p-2 rounded-lg w-full mb-4 outline-none focus:border-[#EF4F5F]"
       />

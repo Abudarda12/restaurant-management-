@@ -5,7 +5,7 @@ import QRGenerator from "../components/QRGenerator";
 const AdminDashboard = () => {
   const logout = () => {
     localStorage.removeItem("adminToken");
-    window.location.href = "admin/login";
+    window.location.href = "login";
   };
 
   const [stats, setStats] = useState({
