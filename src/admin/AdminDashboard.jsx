@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import QRGenerator from "../components/QRGenerator";
 
 const AdminDashboard = () => {
   const logout = () => {
@@ -48,6 +49,10 @@ const AdminDashboard = () => {
         >
           Logout
         </button>
+      </div>
+      
+      <div className="mb-8">
+        <QRGenerator />
       </div>
 
       {/* STATS GRID */}
