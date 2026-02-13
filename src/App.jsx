@@ -13,11 +13,9 @@ import AdminFeedback from "./admin/AdminFeedback";
 import AdminUpdateMenu from "./admin/AdminUpdateMenu";
 import Home from "./pages/Home";
 import NotFound from "./components/NotFound";
-import { Analytics } from "@vercel/analytics/next"
 function App() {
   return (
     <Routes>
-      <Analytics />
       {/* Customer */}
       <Route path="/" element={<Home />} />
       <Route path="/menu" element={<Menu />} />
