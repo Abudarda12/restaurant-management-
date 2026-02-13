@@ -15,7 +15,7 @@ const AdminMenu = () => {
 
   // Fetch menu items
   const fetchMenu = async () => {
-    const res = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/menu`, {
+    const res = await fetch(`${import.meta.env.VITE_API_URL}api/admin/menu`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -37,7 +37,7 @@ const AdminMenu = () => {
   const addItem = async (e) => {
     e.preventDefault();
 
-    const res = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/menu`, {
+    const res = await fetch(`${import.meta.env.VITE_API_URL}api/admin/menu`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -74,7 +74,7 @@ const AdminMenu = () => {
   const deleteItem = async (id) => {
     if (window.confirm("Are you sure you want to delete this item?")) {
       try {
-        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/menu/${id}`, {
+        const res = await fetch(`${import.meta.env.VITE_API_URL}api/admin/menu/${id}`, {
           method: "DELETE",
           headers: {
             Authorization: `Bearer ${token}`,

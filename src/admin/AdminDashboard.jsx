@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 const AdminDashboard = () => {
   const logout = () => {
     localStorage.removeItem("adminToken");
-    window.location.href = "/admin/login";
+    window.location.href = "admin/login";
   };
 
   const [stats, setStats] = useState({
@@ -14,7 +14,7 @@ const AdminDashboard = () => {
   });
 
   useEffect(() => {
-    fetch(`${import.meta.env.VITE_API_URL}/api/admin/orders`, {
+    fetch(`${import.meta.env.VITE_API_URL}api/admin/orders`, {
       headers: {
         Authorization: `Bearer ${localStorage.getItem("adminToken")}`,
       },

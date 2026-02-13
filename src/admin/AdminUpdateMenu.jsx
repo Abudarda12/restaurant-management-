@@ -14,7 +14,7 @@ const AdminUpdateMenu = () => {
   // Fetch item details
   useEffect(() => {
     const fetchItem = async () => {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/menu/${id}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}api/admin/menu/${id}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -38,7 +38,7 @@ const AdminUpdateMenu = () => {
   // Update item
   const updateItem = async (e) => {
     e.preventDefault();
-    const res = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/menu/${id}`, {
+    const res = await fetch(`${import.meta.env.VITE_API_URL}api/admin/menu/${id}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",

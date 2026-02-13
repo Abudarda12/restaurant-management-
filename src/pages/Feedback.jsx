@@ -15,7 +15,7 @@ const Feedback = () => {
       return;
     }
 
-    await fetch(`${import.meta.env.VITE_API_URL}/api/admin/feedback`, {
+    await fetch(`${import.meta.env.VITE_API_URL}api/admin/feedback`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ tableNumber, rating, comment, name, phone }),

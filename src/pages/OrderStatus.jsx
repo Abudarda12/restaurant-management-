@@ -7,7 +7,7 @@ const OrderStatus = () => {
   const [order, setOrder] = useState(null);
 
   useEffect(() => {
-    fetch(`${import.meta.env.VITE_API_URL}/api/orders`)
+    fetch(`${import.meta.env.VITE_API_URL}api/orders`)
       .then((res) => res.json())
       .then((data) => {
         const found = data.find((o) => o._id === id);
@@ -65,7 +65,7 @@ const OrderStatus = () => {
           Provide your valuable feedback!
         </h1>
         <Link
-          to="/feedback"
+          to="feedback"
           className="block text-center text-blue-500 hover:underline"
         >
           Click here to give feedback

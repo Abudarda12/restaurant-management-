@@ -13,7 +13,7 @@ const AdminOrders = () => {
 
   const fetchOrders = async () => {
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/orders`);
+      const res = await fetch(`${import.meta.env.VITE_API_URL}api/orders`);
       const data = await res.json();
 
       // 🔔 NEW ORDER SOUND LOGIC
@@ -43,7 +43,7 @@ const AdminOrders = () => {
   }, []);
 
   const updateStatus = async (id, status) => {
-    await fetch(`${import.meta.env.VITE_API_URL}/api/orders/${id}/status`, {
+    await fetch(`${import.meta.env.VITE_API_URL}api/orders/${id}/status`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status }),
@@ -53,7 +53,7 @@ const AdminOrders = () => {
 
   const deleteOrder = async (id) => {
     if (window.confirm("Archive this completed order?")) {
-      await fetch(`${import.meta.env.VITE_API_URL}/api/orders/${id}`, {
+      await fetch(`${import.meta.env.VITE_API_URL}api/orders/${id}`, {
         method: "DELETE",
       });
       fetchOrders();

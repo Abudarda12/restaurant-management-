@@ -6,7 +6,7 @@ function AdminFeedback() {
   const [feedback, setFeedback] = useState([]);
   useEffect(() => {
     // Fetch feedback data from the server (placeholder)
-    fetch(`${import.meta.env.VITE_API_URL}/api/admin/feedback`)
+    fetch(`${import.meta.env.VITE_API_URL}api/admin/feedback`)
       .then((res) => res.json())
       .then((data) => {
         setFeedback(data);

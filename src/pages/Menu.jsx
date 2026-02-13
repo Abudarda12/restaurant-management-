@@ -31,7 +31,7 @@ const Menu = () => {
   useEffect(() => {
     const table = searchParams.get("table");
 
-    let url = `${import.meta.env.VITE_API_URL}/api/menu`;
+    let url = `${import.meta.env.VITE_API_URL}api/menu`;
     if (activeCategory !== "All") {
       url += `?category=${encodeURIComponent(activeCategory)}`;
     }
