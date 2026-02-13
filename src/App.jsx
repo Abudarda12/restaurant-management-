@@ -12,6 +12,7 @@ import Feedback from "./pages/Feedback";
 import AdminFeedback from "./admin/AdminFeedback";
 import AdminUpdateMenu from "./admin/AdminUpdateMenu";
 import Home from "./pages/Home";
+import NotFound from "./components/NotFound";
 
 function App() {
   return (
@@ -23,6 +24,9 @@ function App() {
       <Route path="/order/:id" element={<OrderStatus />} />
       <Route path="/bill/:id" element={<Bill />} />
       <Route path="/feedback" element={<Feedback />} />
+
+      {/* Fallback */}
+      <Route path="*" element={<NotFound />} />
 
       {/* Admin */}
       <Route path="/admin/login" element={<AdminLogin />} />
