@@ -11,11 +11,13 @@ import Bill from "./pages/Bill";
 import Feedback from "./pages/Feedback";
 import AdminFeedback from "./admin/AdminFeedback";
 import AdminUpdateMenu from "./admin/AdminUpdateMenu";
+import Home from "./pages/Home";
 
 function App() {
   return (
     <Routes>
       {/* Customer */}
+      <Route path="/" element={<Home />} />
       <Route path="/menu" element={<Menu />} />
       <Route path="/cart" element={<Cart />} />
       <Route path="/order/:id" element={<OrderStatus />} />
