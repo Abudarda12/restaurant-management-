@@ -6,6 +6,7 @@ const AdminLogin = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
+  
 
   const login = async () => {
   const res = await fetch(`${import.meta.env.VITE_API_URL}api/admin/login`, {
