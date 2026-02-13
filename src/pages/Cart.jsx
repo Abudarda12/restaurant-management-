@@ -11,7 +11,7 @@ const Cart = () => {
         <h2 className="text-2xl font-bold mb-4 text-[#EF4F5F]">Your Cart is Empty</h2>
         
         <Link
-          to="menu"
+          to="/menu"
           className="mt-4 inline-block bg-[#EF4F5F] text-white py-2 px-6 rounded-lg"
         >
           Browse Menu
