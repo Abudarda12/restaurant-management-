@@ -65,7 +65,7 @@ const OrderStatus = () => {
           Provide your valuable feedback!
         </h1>
         <Link
-          to="feedback"
+          to="/feedback"
           className="block text-center text-blue-500 hover:underline"
         >
           Click here to give feedback
