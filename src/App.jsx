@@ -63,7 +63,7 @@ function App() {
         }
       />
       <Route
-        path="/admin/update/:id"
+        path="/admin/menu/:id"
         element={
           <ProtectedRoute>
             <AdminUpdateMenu />

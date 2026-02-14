@@ -206,7 +206,7 @@ const AdminMenu = () => {
                       </p>
                       <div className="flex gap-4 mt-2">
                         <Link
-                          to={`/admin/menu/${item._id}`}
+                          to={`/api/admin/menu/${item._id}`}
                           className="text-green-500 hover:underline"
                         >
                           Edit
