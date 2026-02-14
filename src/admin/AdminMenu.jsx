@@ -59,7 +59,7 @@ const AdminMenu = () => {
   };
 
   // Group menu by category
-  const categories = ["Snacks", "Main-course", "Desserts", "Drinks"];
+  const categories = ["Quick-Snacks", "Burger", "Pasta", "Desserts", "Drinks", "Gym-Beam", "Sandwiches", "Eggs", "Chinese", "Nepali", "Beverages", "Mocktail & Shakes"];
 
   const filteredMenu =
     filter === "All" ? menu : menu.filter((item) => item.category === filter);
@@ -134,10 +134,18 @@ const AdminMenu = () => {
           <option value="" disabled>
             Select Category
           </option>
-          <option value="Snacks">Snacks</option>
-          <option value="Main-course">Main Course</option>
+          <option value="Quick-Snacks">Quick Snacks</option>
+          <option value="Burger">Burger</option>
+          <option value="Pasta">Pasta</option>
           <option value="Desserts">Desserts</option>
           <option value="Drinks">Drinks</option>
+          <option value="Gym-Beam"></option>
+          <option value="Sandwiches">Sandwiches</option>
+          <option value="Eggs">Eggs</option>
+          <option value="Chinese">Chinese</option>
+          <option value="Nepali">Nepali</option>
+          <option value="Beverages">Beverages</option>
+          <option value="Mocktail & Shakes">Mocktail & Shakes</option>
         </select>
 
         <input

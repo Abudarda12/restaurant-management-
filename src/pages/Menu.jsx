@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import MenuCard from "../components/MenuCard";
 import { Link, useSearchParams } from "react-router-dom";
 
-const categories = ["All", "Snacks", "Main-Course", "Drinks", "Desserts"];
+const categories = ["Quick-Snacks", "Burger", "Pasta", "Desserts", "Drinks", "Gym-Beam", "Sandwiches", "Eggs", "Chinese", "Nepali", "Beverages", "Mocktail & Shakes"];
 
 const Menu = () => {
   const [customerName, setCustomerName] = useState(localStorage.getItem("customerName") || "");
