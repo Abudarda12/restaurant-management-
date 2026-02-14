@@ -3,11 +3,29 @@ import MenuCard from "../components/MenuCard";
 import { Link, useSearchParams } from "react-router-dom";
 import MenuSkeleton from "../components/MenuSceleton";
 
-const categories = ["All", "Quick-Snacks", "Burger", "Pasta", "Desserts", "Drinks", "Gym-Beam", "Sandwiches", "Eggs", "Chinese", "Nepali", "Beverages", "Mocktail & Shakes"];
+const categories = [
+  "All",
+  "Quick-Snacks",
+  "Burger",
+  "Pasta",
+  "Desserts",
+  "Drinks",
+  "Gym-Beam",
+  "Sandwiches",
+  "Eggs",
+  "Chinese",
+  "Nepali",
+  "Beverages",
+  "Mocktail & Shakes",
+];
 
 const Menu = () => {
-  const [customerName, setCustomerName] = useState(localStorage.getItem("customerName") || "");
-  const [showModal, setShowModal] = useState(!localStorage.getItem("customerName"));
+  const [customerName, setCustomerName] = useState(
+    localStorage.getItem("customerName") || "",
+  );
+  const [showModal, setShowModal] = useState(
+    !localStorage.getItem("customerName"),
+  );
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true); // 1. Added loading state
   const [searchParams] = useSearchParams();
@@ -29,12 +47,12 @@ const Menu = () => {
     if (table) localStorage.setItem("tableNumber", table);
 
     setLoading(true); // 2. Start loading before fetch
-    
+
     let url = `${import.meta.env.VITE_API_URL}api/menu`; // Ensure the slash is there!
     if (activeCategory !== "All") {
       url += `?category=${encodeURIComponent(activeCategory)}`;
     }
-    
+
     fetch(url)
       .then((res) => res.json())
       .then((data) => {
@@ -54,14 +72,18 @@ const Menu = () => {
         <div className="max-w-md mx-auto">
           <div className="flex justify-between items-center mb-4">
             <div>
-              <p className="text-[10px] uppercase tracking-widest text-gray-400 font-bold">Ordering to</p>
+              <p className="text-[10px] uppercase tracking-widest text-gray-400 font-bold">
+                Ordering to
+              </p>
               <h2 className="text-lg font-black text-gray-800 flex items-center gap-1">
                 📍 Table {tableNumber || "N/A"}
               </h2>
             </div>
             <div className="text-right">
               <p className="text-xs text-gray-500">Welcome,</p>
-              <p className="text-sm font-bold text-[#EF4F5F]">{customerName || "Guest"}</p>
+              <p className="text-sm font-bold text-[#EF4F5F]">
+                {customerName || "Guest"}
+              </p>
             </div>
           </div>
 
@@ -90,7 +112,9 @@ const Menu = () => {
             <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mb-6 mx-auto">
               <span className="text-3xl">🍔</span>
             </div>
-            <h2 className="text-2xl font-black text-gray-800 text-center mb-2">Taste Awaits!</h2>
+            <h2 className="text-2xl font-black text-gray-800 text-center mb-2">
+              Taste Awaits!
+            </h2>
             <p className="text-gray-500 text-center text-sm mb-8 leading-relaxed">
               Just your name and we'll get the kitchen fired up for you.
             </p>
@@ -113,12 +137,14 @@ const Menu = () => {
       {/* --- MENU CONTENT --- */}
       <main className="pt-36 px-4 max-w-md mx-auto">
         <h3 className="text-xl font-black text-gray-800 mb-6 uppercase tracking-tight">
-          {activeCategory === "All" ? "Today's Specials" : activeCategory.replace("-", " ")}
+          {activeCategory === "All"
+            ? "Today's Specials"
+            : activeCategory.replace("-", " ")}
         </h3>
 
-        <div className="grid grid-cols-1 gap-6">
+        {/* Changed gap and columns for a more premium look */}
+        <div className="grid grid-cols-1 gap-8">
           {loading ? (
-            // 4. Render 3-4 skeletons while loading
             <>
               <MenuSkeleton />
               <MenuSkeleton />
@@ -127,21 +153,24 @@ const Menu = () => {
           ) : items.length === 0 ? (
             <div className="text-center py-20">
               <div className="text-5xl mb-4">🔍</div>
-              <p className="text-gray-400 font-medium">No dishes found in this category.</p>
+              <p className="text-gray-400 font-medium">
+                No dishes found in this category.
+              </p>
             </div>
           ) : (
             items.map((item) => <MenuCard key={item._id} item={item} />)
           )}
         </div>
       </main>
-
       {/* --- FLOATING CART BUTTON --- */}
       <Link
         to="/cart"
         className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-8 py-4 rounded-2xl shadow-2xl flex items-center gap-4 active:scale-90 transition-transform z-40"
       >
         <span className="bg-[#EF4F5F] p-1.5 rounded-lg text-sm">🛒</span>
-        <span className="font-black tracking-wide text-sm uppercase">View Your Cart</span>
+        <span className="font-black tracking-wide text-sm uppercase">
+          View Your Cart
+        </span>
       </Link>
     </div>
   );

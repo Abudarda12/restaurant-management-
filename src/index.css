@@ -2,16 +2,24 @@
 @import "tailwindcss";
 
 @media print {
+  /* Hide everything else on the page */
   body * {
     visibility: hidden;
   }
-  #kot-print, #kot-print * {
+  /* Only show the element with the ID 'kot-receipt' */
+  #kot-receipt, #kot-receipt * {
     visibility: visible;
   }
-  #kot-print {
+  #kot-receipt {
     position: absolute;
     left: 0;
     top: 0;
-    width: 80mm; /* Standard Thermal Paper Width */
+    width: 100%;
+    padding: 0;
+    margin: 0;
+  }
+  /* Remove headers/footers (URL, Date) from the browser print */
+  @page {
+    margin: 0;
   }
 }
