@@ -205,7 +205,7 @@ const AdminOrders = () => {
                     >
                       <center>
                         <h2 style={{ margin: 0, fontSize: "18px" }}>
-                          KITCHEN ORDER
+                          ORDER
                         </h2>
                         <p style={{ margin: "5px 0" }}>
                           Table: {order.tableNumber}
@@ -293,7 +293,7 @@ const AdminOrders = () => {
                             </td>
                           </tr>
                         </tfoot> 
-                        
+
                       </table>
 
                       <div
