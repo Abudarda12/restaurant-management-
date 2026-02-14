@@ -1,13 +1,15 @@
 import { useEffect, useState } from "react";
 import MenuCard from "../components/MenuCard";
 import { Link, useSearchParams } from "react-router-dom";
+import MenuSkeleton from "../components/MenuSceleton";
 
-const categories = ["Quick-Snacks", "Burger", "Pasta", "Desserts", "Drinks", "Gym-Beam", "Sandwiches", "Eggs", "Chinese", "Nepali", "Beverages", "Mocktail & Shakes"];
+const categories = ["All", "Quick-Snacks", "Burger", "Pasta", "Desserts", "Drinks", "Gym-Beam", "Sandwiches", "Eggs", "Chinese", "Nepali", "Beverages", "Mocktail & Shakes"];
 
 const Menu = () => {
   const [customerName, setCustomerName] = useState(localStorage.getItem("customerName") || "");
   const [showModal, setShowModal] = useState(!localStorage.getItem("customerName"));
   const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true); // 1. Added loading state
   const [searchParams] = useSearchParams();
   const [activeCategory, setActiveCategory] = useState("All");
   const tableNumber = localStorage.getItem("tableNumber");
@@ -26,14 +28,23 @@ const Menu = () => {
     const table = searchParams.get("table");
     if (table) localStorage.setItem("tableNumber", table);
 
-    let url = `${import.meta.env.VITE_API_URL}api/menu`;
+    setLoading(true); // 2. Start loading before fetch
+    
+    let url = `${import.meta.env.VITE_API_URL}api/menu`; // Ensure the slash is there!
     if (activeCategory !== "All") {
       url += `?category=${encodeURIComponent(activeCategory)}`;
     }
     
     fetch(url)
       .then((res) => res.json())
-      .then((data) => setItems(data));
+      .then((data) => {
+        setItems(data);
+        setLoading(false); // 3. Stop loading after data arrives
+      })
+      .catch((err) => {
+        console.error(err);
+        setLoading(false);
+      });
   }, [activeCategory, searchParams]);
 
   return (
@@ -54,7 +65,6 @@ const Menu = () => {
             </div>
           </div>
 
-          {/* CATEGORY SCROLLER */}
           <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
             {categories.map((cat) => (
               <button
@@ -100,24 +110,29 @@ const Menu = () => {
         </div>
       )}
 
-      {/* --- MENU ITEMS GRID --- */}
+      {/* --- MENU CONTENT --- */}
       <main className="pt-36 px-4 max-w-md mx-auto">
-        <h3 className="text-xl font-black text-gray-800 mb-6">
-          {activeCategory === "All" ? "Today's Specials" : activeCategory}
+        <h3 className="text-xl font-black text-gray-800 mb-6 uppercase tracking-tight">
+          {activeCategory === "All" ? "Today's Specials" : activeCategory.replace("-", " ")}
         </h3>
 
-        {items.length === 0 ? (
-          <div className="text-center py-20">
-            <div className="text-5xl mb-4">🔍</div>
-            <p className="text-gray-400 font-medium">No dishes found in this category.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-6">
-            {items.map((item) => (
-              <MenuCard key={item._id} item={item} />
-            ))}
-          </div>
-        )}
+        <div className="grid grid-cols-1 gap-6">
+          {loading ? (
+            // 4. Render 3-4 skeletons while loading
+            <>
+              <MenuSkeleton />
+              <MenuSkeleton />
+              <MenuSkeleton />
+            </>
+          ) : items.length === 0 ? (
+            <div className="text-center py-20">
+              <div className="text-5xl mb-4">🔍</div>
+              <p className="text-gray-400 font-medium">No dishes found in this category.</p>
+            </div>
+          ) : (
+            items.map((item) => <MenuCard key={item._id} item={item} />)
+          )}
+        </div>
       </main>
 
       {/* --- FLOATING CART BUTTON --- */}

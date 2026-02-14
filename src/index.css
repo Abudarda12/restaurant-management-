@@ -1,2 +1,17 @@
 
 @import "tailwindcss";
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #kot-print, #kot-print * {
+    visibility: visible;
+  }
+  #kot-print {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 80mm; /* Standard Thermal Paper Width */
+  }
+}

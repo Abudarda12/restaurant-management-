@@ -1,10 +1,30 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import KOTTemplate from "../components/PrintOrder";
 
 const AdminOrders = () => {
   const [orders, setOrders] = useState([]);
   const prevOrderCountRef = useRef(0);
   const audioRef = useRef(null);
+
+  const handlePrint = (order) => {
+    const printWindow = window.open("", "_blank");
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>KOT - ${order._id.slice(-6).toUpperCase()}</title>
+        </head>
+        <body>
+          ${KOTTemplate({ order })}
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.print();
+    setTimeout(() => {
+      printWindow.close();
+    }, 1000);
+  };
 
   // Initialize Audio
   useEffect(() => {
@@ -163,6 +183,13 @@ const AdminOrders = () => {
                       <p className="text-sm font-bold text-gray-800 mb-1">
                         Total: ₹{order.totalAmount}
                       </p>
+
+                      <button
+                        onClick={() => handlePrint(order)}
+                        className="bg-blue-600 text-white px-4 py-2 rounded-lg font-bold flex items-center gap-2"
+                      >
+                        🖨️ Print KOT
+                      </button>
 
                       {/* ACTION BUTTONS */}
                       {status === "Pending" && (
