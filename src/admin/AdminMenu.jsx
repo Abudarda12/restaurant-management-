@@ -139,7 +139,7 @@ const AdminMenu = () => {
           <option value="Pasta">Pasta</option>
           <option value="Desserts">Desserts</option>
           <option value="Drinks">Drinks</option>
-          <option value="Gym-Beam"></option>
+          <option value="Gym-Beam">Gym-Beam</option>
           <option value="Sandwiches">Sandwiches</option>
           <option value="Eggs">Eggs</option>
           <option value="Chinese">Chinese</option>
