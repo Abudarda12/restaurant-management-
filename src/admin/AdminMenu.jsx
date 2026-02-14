@@ -59,7 +59,20 @@ const AdminMenu = () => {
   };
 
   // Group menu by category
-  const categories = ["Quick-Snacks", "Burger", "Pasta", "Desserts", "Drinks", "Gym-Beam", "Sandwiches", "Eggs", "Chinese", "Nepali", "Beverages", "Mocktail & Shakes"];
+  const categories = [
+    "Quick-Snacks",
+    "Burger",
+    "Pasta",
+    "Desserts",
+    "Drinks",
+    "Gym-Beam",
+    "Sandwiches",
+    "Eggs",
+    "Chinese",
+    "Nepali",
+    "Beverages",
+    "Mocktail & Shakes",
+  ];
 
   const filteredMenu =
     filter === "All" ? menu : menu.filter((item) => item.category === filter);
@@ -74,12 +87,15 @@ const AdminMenu = () => {
   const deleteItem = async (id) => {
     if (window.confirm("Are you sure you want to delete this item?")) {
       try {
-        const res = await fetch(`${import.meta.env.VITE_API_URL}api/admin/menu/${id}`, {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${token}`,
+        const res = await fetch(
+          `${import.meta.env.VITE_API_URL}api/admin/menu/${id}`,
+          {
+            method: "DELETE",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
           },
-        });
+        );
 
         if (res.ok) {
           // Update state locally so the item disappears immediately
@@ -95,7 +111,10 @@ const AdminMenu = () => {
 
   return (
     <div className=" min-h-screen bg-gray-100 flex flex-col items-center gap-6">
-      <Link to="/admin/dashboard" className="text-[#EF4F5F] hover:underline">
+      <Link
+        to="/admin/dashboard"
+        className="text-[#EF4F5F] hover:underline self-start ml-6 mt-6 font-bold "
+      >
         Back to Dashboard
       </Link>
       {/* ADD ITEM FORM */}
@@ -154,7 +173,6 @@ const AdminMenu = () => {
           value={form.image}
           onChange={handleChange}
           className="border p-2 rounded"
-          
         />
 
         <button
@@ -214,7 +232,7 @@ const AdminMenu = () => {
                       </p>
                       <div className="flex gap-4 mt-2">
                         <Link
-                          to={`/api/admin/menu/${item._id}`}
+                          to={`/admin/menu/update/${item._id}`} // Clear frontend path
                           className="text-green-500 hover:underline"
                         >
                           Edit
@@ -222,7 +240,8 @@ const AdminMenu = () => {
                         <button
                           onClick={() => deleteItem(item._id)}
                           className="text-red-500 hover:underline"
-                        >Delete
+                        >
+                          Delete
                         </button>
                       </div>
                     </div>
@@ -239,7 +258,6 @@ const AdminMenu = () => {
           </p>
         )}
       </div>
-      
     </div>
   );
 };
