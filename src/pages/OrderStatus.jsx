@@ -1,4 +1,4 @@
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, redirect } from "react-router-dom";
 import { useEffect, useState } from "react";
 import StatusSkeleton from "../components/StatusSkeleton";
 
@@ -62,6 +62,7 @@ const OrderStatus = () => {
         alert("Order cancelled successfully.");
         // Optional: Force an immediate local state update so UI changes instantly
         setOrder(prev => ({ ...prev, status: "Cancelled" }));
+        redirect("/menu");
       } else {
         // This will now catch the 400 "Chef is cooking" message
         alert(data.message || "Could not cancel order.");
@@ -72,7 +73,7 @@ const OrderStatus = () => {
     }
   };
 
-  
+
   //fetching order
   useEffect(() => {
     const fetchOrder = () => {
