@@ -43,6 +43,32 @@ const OrderStatus = () => {
     },
   };
 
+  //order cancel
+  const handleCancelOrder = async () => {
+    if (window.confirm("Are you sure you want to cancel this order?")) {
+      try {
+        const res = await fetch(
+          `${import.meta.env.VITE_API_URL}api/orders/${id}/cancel`,
+          {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+          },
+        );
+
+        const data = await res.json();
+
+        if (res.ok) {
+          alert("Order cancelled.");
+          // The useEffect polling will automatically update the UI to show 'Cancelled' status
+        } else {
+          alert(data.message); // Shows the "Chef started cooking" message from backend
+        }
+      } catch (err) {
+        alert("Failed to cancel order. Please try again.");
+      }
+    }
+  };
+  //fetching order
   useEffect(() => {
     const fetchOrder = () => {
       fetch(`${import.meta.env.VITE_API_URL}api/orders/${id}`)
@@ -154,6 +180,20 @@ const OrderStatus = () => {
         </div>
       </div>
 
+      {/*  cancel order */}
+      {order.status === "Pending" && (
+        <div className="mt-4">
+          <button
+            onClick={handleCancelOrder}
+            className="w-full py-3 border-2 border-red-100 text-red-500 rounded-2xl font-bold text-sm hover:bg-red-50 transition-all active:scale-95"
+          >
+            Cancel Order
+          </button>
+          <p className="text-[10px] text-gray-400 mt-2 italic">
+            *Orders can only be cancelled before the kitchen starts preparation.
+          </p>
+        </div>
+      )}
       {/* --- FEEDBACK ACTION --- */}
       <div className="pt-4">
         <Link
