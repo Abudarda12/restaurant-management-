@@ -4,8 +4,8 @@ import { Link, useNavigate } from "react-router-dom";
 
 // --- RESTAURANT CONFIGURATION (Arrah, Bihar) ---
 const RESTAURANT_COORDS = {
-  lat: 25.55904548810571, 
-  lng: 84.66481028650665,
+  lat: 25.26723087014833,  
+  lng: 83.57550024783234,
 };
 const MAX_DISTANCE_METERS = 100; // Allowed radius around the restaurant
 
