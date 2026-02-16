@@ -45,29 +45,34 @@ const OrderStatus = () => {
 
   //order cancel
   const handleCancelOrder = async () => {
-    if (window.confirm("Are you sure you want to cancel this order?")) {
-      try {
-        const res = await fetch(
-          `${import.meta.env.VITE_API_URL}api/orders/${id}/cancel`,
-          {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-          },
-        );
+    if (!window.confirm("Are you sure you want to cancel this order?")) return;
 
-        const data = await res.json();
-
-        if (res.ok) {
-          alert("Order cancelled.");
-          // The useEffect polling will automatically update the UI to show 'Cancelled' status
-        } else {
-          alert(data.message); // Shows the "Chef started cooking" message from backend
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}api/orders/${id}/cancel`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
         }
-      } catch (err) {
-        alert("Failed to cancel order. Please try again.");
+      );
+
+      const data = await res.json();
+
+      if (res.ok) {
+        alert("Order cancelled successfully.");
+        // Optional: Force an immediate local state update so UI changes instantly
+        setOrder(prev => ({ ...prev, status: "Cancelled" }));
+      } else {
+        // This will now catch the 400 "Chef is cooking" message
+        alert(data.message || "Could not cancel order.");
       }
+    } catch (err) {
+      console.error("Fetch Error:", err);
+      alert("Network error: Server is currently unreachable.");
     }
   };
+
+  
   //fetching order
   useEffect(() => {
     const fetchOrder = () => {
