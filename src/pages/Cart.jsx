@@ -12,6 +12,8 @@ const MAX_DISTANCE_METERS = 100; // Allowed radius around the restaurant
 const Cart = () => {
   const { cart, addToCart, decreaseQty, total } = useContext(CartContext);
   const [loading, setLoading] = useState(false);
+  const [orderType, setOrderType] = useState("Dining"); // New: Dining or Delivery
+  const [deliveryDetails, setDeliveryDetails] = useState({ address: "", phone: "" });
   const navigate = useNavigate();
 
   // --- HAVERSINE DISTANCE CALCULATOR ---
@@ -30,25 +32,71 @@ const Cart = () => {
     return R * c; // Returns distance in meters
   };
 
-  const placeOrderHandler = async () => {
+  const submitOrder = async () => {
     const tableNumber = localStorage.getItem("tableNumber");
     const name = localStorage.getItem("customerName");
 
-    if (!tableNumber) {
+    try {
+      const orderData = {
+        orderType,
+        tableNumber: orderType === "Dining" ? Number(tableNumber) : null,
+        customerName: name || "Guest",
+        address: orderType === "Delivery" ? deliveryDetails.address : "Dine-in",
+        phone: orderType === "Delivery" ? deliveryDetails.phone : "N/A",
+        items: cart.map((item) => ({
+          menuId: item._id,
+          qty: item.qty,
+        })),
+        totalAmount: total,
+      };
+
+      const res = await fetch(`${import.meta.env.VITE_API_URL}api/orders`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(orderData),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        navigate(`/order/${data._id}`);
+      } else {
+        alert("Order failed at the server. Try again.");
+        setLoading(false);
+      }
+    } catch (err) {
+      alert("Network error. Please check your internet.");
+      setLoading(false);
+    }
+  };
+
+  const placeOrderHandler = async () => {
+    const tableNumber = localStorage.getItem("tableNumber");
+
+    if (orderType === "Dining" && !tableNumber) {
       alert("❌ Table not detected. Please scan the QR code again.");
+      return;
+    }
+
+    if (orderType === "Delivery" && (!deliveryDetails.address || !deliveryDetails.phone)) {
+      alert("❌ Please enter your address and phone number for delivery.");
       return;
     }
 
     setLoading(true);
 
-    // 1. Check for GPS Support
+    // If Delivery, skip GPS check and submit
+    if (orderType === "Delivery") {
+      await submitOrder();
+      return;
+    }
+
+    // If Dining, perform Geofencing check
     if (!navigator.geolocation) {
       alert("Geolocation is not supported by your browser.");
       setLoading(false);
       return;
     }
 
-    // 2. Request Location
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         const { latitude, longitude } = position.coords;
@@ -59,46 +107,17 @@ const Cart = () => {
           RESTAURANT_COORDS.lng
         );
 
-        // 3. Distance Verification
         if (distance > MAX_DISTANCE_METERS) {
           alert(`⛔ Out of Range: You are ${Math.round(distance)}m away. Please order from inside the restaurant.`);
           setLoading(false);
           return;
         }
 
-        // 4. Send Order to Backend
-        try {
-          const orderData = {
-            tableNumber: Number(tableNumber),
-            customerName: name || "Guest",
-            items: cart.map((item) => ({
-              menuId: item._id,
-              qty: item.qty,
-            })),
-            totalAmount: total,
-          };
-
-          const res = await fetch(`${import.meta.env.VITE_API_URL}api/orders`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(orderData),
-          });
-
-          if (res.ok) {
-            const data = await res.json();
-            navigate(`/order/${data._id}`);
-          } else {
-            alert("Order failed at the server. Try again.");
-            setLoading(false);
-          }
-        } catch (err) {
-          alert("Network error. Please check your internet.");
-          setLoading(false);
-        }
+        await submitOrder();
       },
       (error) => {
         setLoading(false);
-        alert("Location access is required to place an order. Please enable GPS.");
+        alert("Location access is required for Dine-in orders. Please enable GPS.");
       },
       { enableHighAccuracy: true, timeout: 10000 }
     );
@@ -117,6 +136,40 @@ const Cart = () => {
     <div className="p-4 max-w-xl mx-auto pb-20">
       <h2 className="text-2xl font-black text-center text-gray-800 mb-6 uppercase tracking-tight">Your Order</h2>
       
+      {/* --- ORDER TYPE TOGGLE --- */}
+      <div className="flex bg-gray-100 p-1 rounded-2xl mb-6">
+        <button 
+          onClick={() => setOrderType("Dining")}
+          className={`flex-1 py-3 rounded-xl font-bold text-sm transition-all ${orderType === "Dining" ? "bg-white shadow-sm text-[#EF4F5F]" : "text-gray-500"}`}
+        >
+          🍽️ Dine-in
+        </button>
+        <button 
+          onClick={() => setOrderType("Delivery")}
+          className={`flex-1 py-3 rounded-xl font-bold text-sm transition-all ${orderType === "Delivery" ? "bg-white shadow-sm text-[#EF4F5F]" : "text-gray-500"}`}
+        >
+          🛵 Delivery
+        </button>
+      </div>
+
+      {/* --- DELIVERY FORM --- */}
+      {orderType === "Delivery" && (
+        <div className="space-y-3 mb-6 animate-in fade-in slide-in-from-top-2 duration-300">
+          <input 
+            type="text" 
+            placeholder="Full Delivery Address" 
+            className="w-full p-4 bg-white border border-gray-100 rounded-2xl outline-none focus:border-[#EF4F5F] shadow-sm"
+            onChange={(e) => setDeliveryDetails({ ...deliveryDetails, address: e.target.value })}
+          />
+          <input 
+            type="tel" 
+            placeholder="Phone Number" 
+            className="w-full p-4 bg-white border border-gray-100 rounded-2xl outline-none focus:border-[#EF4F5F] shadow-sm"
+            onChange={(e) => setDeliveryDetails({ ...deliveryDetails, phone: e.target.value })}
+          />
+        </div>
+      )}
+
       {/* Items Mapping */}
       {cart.map((item) => (
         <div key={item._id} className="flex justify-between items-center mb-4 p-4 bg-white rounded-2xl shadow-sm border border-gray-100">
@@ -152,7 +205,7 @@ const Cart = () => {
           {loading ? (
             <>
               <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-              Verifying Location...
+              {orderType === "Dining" ? "Verifying Location..." : "Placing Order..."}
             </>
           ) : (
             "Place Order"
