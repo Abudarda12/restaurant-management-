@@ -202,7 +202,7 @@ const OrderStatus = () => {
           {order.orderType === "Delivery" && (
             <div className="flex justify-between text-sm text-gray-500">
               <span>Delivery Fee</span>
-              <span>₹40</span>
+              <span>₹20</span>
             </div>
           )}
           <div className="flex justify-between items-center pt-2">
