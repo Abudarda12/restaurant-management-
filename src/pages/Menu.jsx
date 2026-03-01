@@ -27,7 +27,7 @@ const Menu = () => {
     !localStorage.getItem("customerName"),
   );
   const [items, setItems] = useState([]);
-  const [loading, setLoading] = useState(true); // 1. Added loading state
+  const [loading, setLoading] = useState(true);
   const [searchParams] = useSearchParams();
   const [activeCategory, setActiveCategory] = useState("All");
   const tableNumber = localStorage.getItem("tableNumber");
@@ -46,9 +46,9 @@ const Menu = () => {
     const table = searchParams.get("table");
     if (table) localStorage.setItem("tableNumber", table);
 
-    setLoading(true); // 2. Start loading before fetch
+    setLoading(true);
 
-    let url = `${import.meta.env.VITE_API_URL}api/menu`; // Ensure the slash is there!
+    let url = `${import.meta.env.VITE_API_URL}api/menu`;
     if (activeCategory !== "All") {
       url += `?category=${encodeURIComponent(activeCategory)}`;
     }
@@ -57,7 +57,7 @@ const Menu = () => {
       .then((res) => res.json())
       .then((data) => {
         setItems(data);
-        setLoading(false); // 3. Stop loading after data arrives
+        setLoading(false);
       })
       .catch((err) => {
         console.error(err);
@@ -142,7 +142,6 @@ const Menu = () => {
             : activeCategory.replace("-", " ")}
         </h3>
 
-        {/* Changed gap and columns for a more premium look */}
         <div className="grid grid-cols-1 gap-8">
           {loading ? (
             <>
@@ -158,10 +157,25 @@ const Menu = () => {
               </p>
             </div>
           ) : (
-            items.map((item) => <MenuCard key={item._id} item={item} />)
+            items.map((item) => (
+              <div key={item._id} className="relative">
+                {/* Visual indicator for Out of Stock */}
+                {!item.isAvailable && (
+                  <div className="absolute top-4 right-4 z-20">
+                    <span className="bg-slate-800 text-white px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest shadow-xl">
+                      Sold Out
+                    </span>
+                  </div>
+                )}
+                <div className={!item.isAvailable ? "grayscale opacity-60 pointer-events-none" : ""}>
+                   <MenuCard item={item} />
+                </div>
+              </div>
+            ))
           )}
         </div>
       </main>
+
       {/* --- FLOATING CART BUTTON --- */}
       <Link
         to="/cart"

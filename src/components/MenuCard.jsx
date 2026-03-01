@@ -12,7 +12,7 @@ const MenuCard = ({ item }) => {
         <img
           src={item.image || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=500&auto=format&fit=crop"}
           alt={item.name}
-          loading="lazy" // Native lazy loading
+          loading="lazy"
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
         />
         <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-lg shadow-sm">
@@ -39,7 +39,15 @@ const MenuCard = ({ item }) => {
 
         {/* ACTION BUTTONS */}
         <div className="mt-auto">
-          {!current ? (
+          {/* Check Availability First */}
+          {!item.isAvailable ? (
+            <button
+              disabled
+              className="w-full bg-gray-100 text-gray-400 py-2 rounded-xl text-sm font-bold cursor-not-allowed border border-gray-200"
+            >
+              Currently Unavailable
+            </button>
+          ) : !current ? (
             <button
               onClick={() => addToCart(item)}
               className="w-full bg-white border-2 border-gray-100 text-gray-800 py-2 rounded-xl text-sm font-bold hover:border-[#EF4F5F] hover:text-[#EF4F5F] transition-all active:scale-95 flex items-center justify-center gap-2"

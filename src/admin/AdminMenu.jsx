@@ -5,7 +5,7 @@ const AdminMenu = () => {
   const [menu, setMenu] = useState([]);
   const [filter, setFilter] = useState("All");
   const [form, setForm] = useState({ name: "", price: "", category: "", image: "" });
-  const [isFormOpen, setIsFormOpen] = useState(false); // Toggle for mobile/desktop view
+  const [isFormOpen, setIsFormOpen] = useState(false);
 
   const token = localStorage.getItem("adminToken");
 
@@ -23,6 +23,26 @@ const AdminMenu = () => {
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  // --- NEW: Toggle Availability Function ---
+  const toggleAvailability = async (id, currentStatus) => {
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}api/admin/menu/${id}`, {
+        method: "PATCH",
+        headers: { 
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}` 
+        },
+        body: JSON.stringify({ isAvailable: !currentStatus }),
+      });
+      if (res.ok) {
+        // Optimistic UI update or re-fetch
+        fetchMenu();
+      }
+    } catch (error) {
+      console.error("Toggle error:", error);
+    }
   };
 
   const addItem = async (e) => {
@@ -111,7 +131,7 @@ const AdminMenu = () => {
 
       <div className="max-w-7xl mx-auto p-6 flex flex-col lg:flex-row gap-8">
         
-        {/* ADD ITEM FORM - COLLAPSIBLE SIDEBAR STYLE */}
+        {/* ADD ITEM FORM */}
         {isFormOpen && (
           <div className="lg:w-1/3 animate-in fade-in slide-in-from-left duration-300">
             <div className="bg-white p-6 rounded-3xl shadow-xl border border-slate-100 sticky top-44">
@@ -156,17 +176,33 @@ const AdminMenu = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
               {filteredMenu.map((item) => (
-                <div key={item._id} className="group bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-xl border border-slate-100 transition-all duration-300 flex flex-col">
+                <div key={item._id} className={`group bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-xl border border-slate-100 transition-all duration-300 flex flex-col ${!item.isAvailable ? 'opacity-70' : ''}`}>
                   <div className="relative h-48 overflow-hidden">
                     <img 
                       src={item.image || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=500&auto=format&fit=crop"} 
                       alt={item.name} 
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
+                      className={`w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 ${!item.isAvailable ? 'grayscale' : ''}`} 
                     />
-                    <div className="absolute top-3 left-3">
+                    
+                    {/* STATUS BADGE */}
+                    <div className="absolute top-3 left-3 flex gap-2">
                       <span className="bg-white/90 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-black uppercase text-slate-700 shadow-sm border border-white/20">
                         {item.category.replace("-", " ")}
                       </span>
+                    </div>
+
+                    {/* TOGGLE SWITCH OVERLAY */}
+                    <div className="absolute top-3 right-3">
+                      <button 
+                        onClick={() => toggleAvailability(item._id, item.isAvailable)}
+                        className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase shadow-lg transition-all ${
+                          item.isAvailable 
+                          ? "bg-green-500 text-white" 
+                          : "bg-slate-600 text-white"
+                        }`}
+                      >
+                        {item.isAvailable ? "● In Stock" : "○ Out of Stock"}
+                      </button>
                     </div>
                   </div>
                   
