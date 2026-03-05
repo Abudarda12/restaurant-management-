@@ -3,17 +3,28 @@ import { Link } from "react-router-dom";
 
 const AdminOrders = () => {
   const [orders, setOrders] = useState([]);
-  const [menuList, setMenuList] = useState([]); // For the Quick Add dropdown
-  const [viewFilter, setViewFilter] = useState("All"); // All, Dining, Delivery
+  const [menuList, setMenuList] = useState([]);
+  const [viewFilter, setViewFilter] = useState("All");
+  const [showManualModal, setShowManualModal] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [newOrder, setNewOrder] = useState({ 
+    tableNumber: "", 
+    customerName: "Walk-in Customer", 
+    items: [],
+    discount: 0 
+  });
+
   const prevOrderCountRef = useRef(0);
   const audioRef = useRef(null);
 
-  // Initialize Audio
   useEffect(() => {
     audioRef.current = new Audio("/notification.mp3");
+    fetchOrders();
+    fetchMenu();
+    const interval = setInterval(fetchOrders, 5000);
+    return () => clearInterval(interval);
   }, []);
 
-  // Fetch Menu once for the Quick Add dropdown
   const fetchMenu = async () => {
     try {
       const res = await fetch(`${import.meta.env.VITE_API_URL}api/menu`);
@@ -28,14 +39,9 @@ const AdminOrders = () => {
     try {
       const res = await fetch(`${import.meta.env.VITE_API_URL}api/orders`);
       const data = await res.json();
-
-      if (
-        prevOrderCountRef.current > 0 &&
-        data.length > prevOrderCountRef.current
-      ) {
-        audioRef.current.play().catch(() => console.log("Audio blocked"));
+      if (prevOrderCountRef.current > 0 && data.length > prevOrderCountRef.current) {
+        audioRef.current.play().catch(() => {});
       }
-
       prevOrderCountRef.current = data.length;
       setOrders(data);
     } catch (error) {
@@ -43,55 +49,134 @@ const AdminOrders = () => {
     }
   };
 
-  useEffect(() => {
-    fetchOrders();
-    fetchMenu();
-    const interval = setInterval(fetchOrders, 5000);
-    return () => clearInterval(interval);
-  }, []);
-
-  // --- ADD ITEM TO EXISTING ORDER ---
   const addItemToExistingOrder = async (orderId, menuId) => {
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL}api/orders/${orderId}/add-item`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ menuId, qty: 1 }),
-        },
-      );
+      const res = await fetch(`${import.meta.env.VITE_API_URL}api/orders/${orderId}/add-item`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ menuId, qty: 1 }),
+      });
       if (res.ok) fetchOrders();
     } catch (err) {
-      alert("Failed to add item to order.");
+      alert("Failed to add item.");
     }
   };
 
-  const handlePrint = (orderId) => {
-    const printContent = document.getElementById(`kot-${orderId}`);
-    if (!printContent) return alert("Print content not found!");
+  const handleCreateManualOrder = async () => {
+    if (!newOrder.tableNumber || newOrder.items.length === 0) {
+      return alert("Please select Table Number and add items!");
+    }
+    const subtotal = newOrder.items.reduce((sum, i) => sum + i.price * i.qty, 0);
+    const finalAmount = Math.max(0, subtotal - Number(newOrder.discount));
 
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}api/orders`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...newOrder,
+          orderType: "Dining",
+          status: "Preparing",
+          totalAmount: finalAmount,
+        }),
+      });
+      if (res.ok) {
+        setShowManualModal(false);
+        setNewOrder({ tableNumber: "", customerName: "Walk-in Customer", items: [], discount: 0 });
+        fetchOrders();
+      }
+    } catch (err) {
+      alert("Error creating POS order");
+    }
+  };
+
+  const addItemToManual = (item) => {
+    const exists = newOrder.items.find((i) => i.menuId === item._id);
+    if (exists) {
+      setNewOrder({
+        ...newOrder,
+        items: newOrder.items.map((i) => i.menuId === item._id ? { ...i, qty: i.qty + 1 } : i),
+      });
+    } else {
+      setNewOrder({
+        ...newOrder,
+        items: [...newOrder.items, { menuId: item._id, name: item.name, price: item.price, qty: 1 }],
+      });
+    }
+  };
+
+  const handlePrintKOT = (orderId) => {
+    const printContent = document.getElementById(`kot-${orderId}`);
+    if (!printContent) return alert("KOT content not found!");
     const printWindow = window.open("", "_blank");
     printWindow.document.write(`
-    <html>
-      <head>
-        <title>Print KOT</title>
-        <style>
-          body { font-family: monospace; padding: 20px; color: #000; }
-          table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-          th, td { text-align: left; padding: 5px 0; border-bottom: 1px dashed #ccc; }
-          .text-right { text-align: right; }
-          .dashed { border-top: 2px dashed black; margin: 15px 0; }
-          @page { margin: 0; }
-        </style>
-      </head>
-      <body>${printContent.innerHTML}</body>
-    </html>`);
+      <html>
+        <head>
+          <title>KOT - #${orderId.slice(-4)}</title>
+          <style>
+            @page { size: 80mm auto; margin: 0; }
+            body { font-family: 'Courier New', monospace; width: 72mm; padding: 10px; font-size: 14px; color: #000; }
+            .center { text-align: center; }
+            .bold { font-weight: bold; }
+            .dashed-line { border-top: 1px dashed #000; margin: 8px 0; }
+            table { width: 100%; border-collapse: collapse; }
+            th { text-align: left; border-bottom: 1px solid #000; }
+          </style>
+        </head>
+        <body>
+          ${printContent.innerHTML}
+          <script>window.onload = () => { window.print(); window.close(); };</script>
+        </body>
+      </html>
+    `);
     printWindow.document.close();
-    setTimeout(() => {
-      printWindow.print();
-      printWindow.close();
-    }, 500);
+  };
+
+  const handlePrintBill = (order) => {
+    const subtotal = order.totalAmount;
+    const gst = (subtotal * 0.05).toFixed(2);
+    const grandTotal = (parseFloat(subtotal) + parseFloat(gst)).toFixed(2);
+    const printWindow = window.open("", "_blank");
+    printWindow.document.write(`
+      <html>
+        <head>
+          <style>
+            @page { size: 80mm auto; margin: 0; }
+            body { font-family: Arial, sans-serif; width: 72mm; padding: 5px; font-size: 12px; color: #000; }
+            .center { text-align: center; }
+            .border-top { border-top: 1px dashed #000; margin: 5px 0; padding-top: 5px; }
+            table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+            th { text-align: left; border-bottom: 1px solid #000; }
+            .right { text-align: right; }
+          </style>
+        </head>
+        <body>
+          <div class="center"><h2 style="margin:0;">Apna Restaurant</h2><p>TAX INVOICE</p></div>
+          <div class="border-top">
+            <p><b>Bill:</b> #${order._id.slice(-6).toUpperCase()} <span style="float:right;">${new Date().toLocaleDateString()}</span></p>
+            <p><b>Cust:</b> ${order.customerName}</p>
+            ${order.orderType === "Delivery" ? `<p><b>Phone:</b> ${order.phone}</p><p><b>Addr:</b> ${order.address}</p>` : `<p><b>Table:</b> ${order.tableNumber}</p>`}
+          </div>
+          <table>
+            <thead><tr><th>Item</th><th class="right">Qty</th><th class="right">Price</th></tr></thead>
+            <tbody>
+              ${order.items.map(item => `<tr><td>${item.menuId?.name}</td><td class="right">${item.qty}</td><td class="right">₹${item.menuId?.price * item.qty}</td></tr>`).join('')}
+            </tbody>
+          </table>
+          <div class="border-top">
+            <div style="display:flex; justify-content:space-between;"><span>Subtotal:</span><span>₹${subtotal}</span></div>
+            ${order.discount ? `<div style="display:flex; justify-content:space-between; color:red;"><span>Discount:</span><span>-₹${order.discount}</span></div>` : ''}
+            <div style="display:flex; justify-content:space-between;"><span>GST (5%):</span><span>₹${gst}</span></div>
+            <div class="border-top" style="display:flex; justify-content:space-between; font-weight:bold; font-size:14px;">
+              <span>GRAND TOTAL:</span><span>₹${grandTotal}</span>
+            </div>
+          </div>
+          <div class="center" style="margin-top:15px;"><p>THANK YOU! VISIT AGAIN</p></div>
+          <script>window.onload = () => { window.print(); window.close(); };</script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
   };
 
   const updateStatus = async (id, status) => {
@@ -105,24 +190,15 @@ const AdminOrders = () => {
 
   const deleteOrder = async (id) => {
     if (window.confirm("Archive this completed order?")) {
-      await fetch(`${import.meta.env.VITE_API_URL}api/orders/${id}`, {
-        method: "DELETE",
-      });
+      await fetch(`${import.meta.env.VITE_API_URL}api/orders/${id}`, { method: "DELETE" });
       fetchOrders();
     }
   };
 
   const statusCategories = ["Pending", "Preparing", "Served"];
-
-  const filteredOrders = orders.filter((order) => {
-    if (viewFilter === "All") return true;
-    return order.orderType === viewFilter;
-  });
-
+  const filteredOrders = orders.filter((o) => viewFilter === "All" || o.orderType === viewFilter);
   const groupedOrders = statusCategories.reduce((acc, status) => {
-    acc[status] = filteredOrders.filter(
-      (o) => o.status?.toLowerCase() === status.toLowerCase(),
-    );
+    acc[status] = filteredOrders.filter((o) => o.status?.toLowerCase() === status.toLowerCase());
     return acc;
   }, {});
 
@@ -131,374 +207,94 @@ const AdminOrders = () => {
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
           <div>
-            <Link
-              to="/admin/dashboard"
-              className="text-gray-500 hover:text-black text-sm font-bold flex items-center gap-1 mb-2"
-            >
-              ← Back to Dashboard
-            </Link>
-            <h1 className="text-4xl font-black text-gray-900 tracking-tight">
-              Kitchen Board
-            </h1>
+            <Link to="/admin/dashboard" className="text-gray-500 hover:text-black text-sm font-bold flex items-center gap-1 mb-2">← Back</Link>
+            <h1 className="text-4xl font-black text-gray-900 tracking-tight italic uppercase">Orders Console</h1>
           </div>
-
-          <div className="flex bg-white p-1 rounded-xl shadow-sm border border-gray-200">
-            {["All", "Dining", "Delivery"].map((type) => (
-              <button
-                key={type}
-                onClick={() => setViewFilter(type)}
-                className={`px-4 py-2 rounded-lg text-xs font-black transition-all ${
-                  viewFilter === type
-                    ? "bg-black text-white"
-                    : "text-gray-500 hover:bg-gray-50"
-                }`}
-              >
-                {type === "Dining"
-                  ? "🍽️ Dine-In"
-                  : type === "Delivery"
-                    ? "🛵 Delivery"
-                    : "Show All"}
-              </button>
-            ))}
+          <div className="flex gap-4 items-center">
+            <button onClick={() => setShowManualModal(true)} className="bg-green-600 text-white px-6 py-3 rounded-2xl font-black text-sm shadow-xl hover:scale-105 transition-all">➕ NEW COUNTER BILL</button>
+            <div className="flex bg-white p-1 rounded-xl shadow-sm border border-gray-200">
+              {["All", "Dining", "Delivery"].map((type) => (
+                <button key={type} onClick={() => setViewFilter(type)} className={`px-4 py-2 rounded-lg text-xs font-black transition-all ${viewFilter === type ? "bg-black text-white" : "text-gray-500 hover:bg-gray-50"}`}>{type}</button>
+              ))}
+            </div>
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {statusCategories.map((status) => (
-            <div
-              key={status}
-              className="bg-gray-200/50 p-4 rounded-3xl min-h-[80vh] border border-gray-200"
-            >
-              <h2
-                className={`text-sm font-black mb-6 flex justify-between items-center px-2 uppercase tracking-widest ${
-                  status === "Pending"
-                    ? "text-orange-600"
-                    : status === "Preparing"
-                      ? "text-blue-600"
-                      : "text-green-600"
-                }`}
-              >
-                {status}
-                <span className="bg-white text-gray-900 px-3 py-1 rounded-full text-xs shadow-sm border border-gray-100 italic">
-                  {groupedOrders[status].length} Orders
-                </span>
+            <div key={status} className="bg-gray-200/50 p-4 rounded-3xl min-h-[80vh] border border-gray-200">
+              <h2 className={`text-sm font-black mb-6 flex justify-between items-center px-2 uppercase tracking-widest ${status === "Pending" ? "text-orange-600" : status === "Preparing" ? "text-blue-600" : "text-green-600"}`}>
+                {status} <span className="bg-white text-gray-900 px-3 py-1 rounded-full text-xs italic">{groupedOrders[status].length}</span>
               </h2>
 
               <div className="space-y-5">
                 {groupedOrders[status].map((order) => (
-                  <div
-                    key={order._id}
-                    className={`bg-white p-5 rounded-3xl shadow-md border-t-8 transition-all ${
-                      order.orderType === "Delivery"
-                        ? "border-t-purple-600"
-                        : "border-t-slate-900"
-                    }`}
-                  >
-                    {/* TYPE BADGE */}
+                  <div key={order._id} className={`bg-white p-5 rounded-3xl shadow-md border-t-8 transition-all ${order.orderType === "Delivery" ? "border-t-purple-600" : "border-t-slate-900"}`}>
                     <div className="flex justify-between items-start mb-4">
-                      <span
-                        className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-tighter border ${
-                          order.orderType === "Delivery"
-                            ? "bg-purple-50 text-purple-700 border-purple-100"
-                            : "bg-slate-50 text-slate-700 border-slate-100"
-                        }`}
-                      >
-                        {order.orderType === "Delivery"
-                          ? "🛵 Online"
-                          : "🍽️ Dine-In"}
-                      </span>
-                      <button
-                        onClick={() => handlePrint(order._id)}
-                        className="p-2 bg-gray-50 hover:bg-gray-100 rounded-xl border border-gray-200"
-                      >
-                        🖨️
-                      </button>
+                      <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase border ${order.orderType === "Delivery" ? "bg-purple-50 text-purple-700 border-purple-100" : "bg-slate-50 text-slate-700 border-slate-100"}`}>{order.orderType === "Delivery" ? "🛵 Online" : "🍽️ Dine-In"}</span>
+                      <button onClick={() => handlePrintKOT(order._id)} className="p-2 bg-gray-50 hover:bg-gray-100 rounded-xl border text-[10px] font-bold">🖨️ KOT</button>
                     </div>
 
-                    <h3 className="font-black text-2xl text-gray-900 mb-1 leading-none">
-                      {order.orderType === "Delivery"
-                        ? "Parcel Order"
-                        : `Table #${order.tableNumber}`}
-                    </h3>
-
-                    <div className="flex flex-col gap-1 mb-4 mt-2">
-                      <span className="text-gray-500 text-xs font-bold">
-                        👤 {order.customerName}
-                      </span>
+                    <h3 className="font-black text-2xl text-gray-900 mb-1">{order.orderType === "Delivery" ? "Parcel" : `Table #${order.tableNumber}`}</h3>
+                    
+                    <div className="flex flex-col gap-1 mb-3 mt-1">
+                      <p className="text-gray-500 text-xs font-bold italic">👤 {order.customerName}</p>
                       {order.orderType === "Delivery" && (
-                        <span className="text-purple-600 text-xs font-bold bg-purple-50 w-fit px-2 py-0.5 rounded italic">
-                          📞 {order.phone}
-                        </span>
+                        <>
+                          <p className="text-purple-600 text-[11px] font-bold">📞 {order.phone}</p>
+                          <p className="text-gray-400 text-[10px] leading-tight bg-gray-50 p-2 rounded-lg border border-dashed mt-1">📍 {order.address}</p>
+                        </>
                       )}
                     </div>
 
-                    {order.orderType === "Delivery" && (
-                      <div className="mb-4 p-3 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-                        <p className="text-[11px] text-slate-600 font-bold leading-relaxed italic">
-                          📍 {order.address}
-                        </p>
-                      </div>
-                    )}
-
                     <OrderTimer createdAt={order.createdAt} />
 
-                    <ul className="mt-4 text-sm border-t border-dashed border-gray-100 pt-4 space-y-2">
+                    <ul className="mt-4 text-sm border-t border-dashed pt-4 space-y-2">
                       {order.items.map((item) => (
-                        <li
-                          key={item._id}
-                          className="flex justify-between font-bold text-gray-800"
-                        >
-                          <span>{item.menuId?.name || "Deleted"}</span>
-                          <span className="text-gray-400">x{item.qty}</span>
+                        <li key={item._id} className="flex justify-between font-bold text-gray-800">
+                          <span>{item.menuId?.name}</span> <span className="text-gray-400">x{item.qty}</span>
                         </li>
                       ))}
                     </ul>
 
-                    {/* --- QUICK ADD FEATURE --- */}
-                    <div className="mt-2 mb-4 bg-gray-50 p-2 rounded-xl">
-                      <select
-                        className="w-full bg-transparent text-[11px] font-bold outline-none cursor-pointer text-gray-400"
-                        onChange={(e) => {
-                          if (e.target.value) {
-                            addItemToExistingOrder(order._id, e.target.value);
-                            e.target.value = "";
-                          }
-                        }}
-                      >
-                        <option value="">+ Add Extra (Water, Soda...)</option>
-                        {menuList.map((item) => (
-                          <option key={item._id} value={item._id}>
-                            {item.name} - ₹{item.price}
-                          </option>
-                        ))}
+                    <div className="mt-4 bg-gray-50 p-2 rounded-xl border border-dashed">
+                      <select className="w-full bg-transparent text-[10px] font-black outline-none text-gray-400 uppercase" onChange={(e) => { if (e.target.value) { addItemToExistingOrder(order._id, e.target.value); e.target.value = ""; } }}>
+                        <option value="">+ Add Extra Item</option>
+                        {menuList.map((m) => <option key={m._id} value={m._id}>{m.name}</option>)}
                       </select>
                     </div>
 
-                    <div className="flex justify-between items-center py-3 border-t border-gray-50">
-                      <span className="text-[10px] font-black uppercase text-gray-400">
-                        Bill Total
-                      </span>
-                      <span className="font-black text-gray-900 text-lg">
-                        ₹{order.totalAmount}
-                      </span>
-                    </div>
-
-                    <div className="flex flex-col gap-2">
-                      {status === "Pending" && (
-                        <button
-                          onClick={() => updateStatus(order._id, "Preparing")}
-                          className="w-full py-3 bg-orange-500 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-orange-100"
-                        >
-                          Accept Order
-                        </button>
-                      )}
-                      {status === "Preparing" && (
-                        <button
-                          onClick={() => updateStatus(order._id, "Served")}
-                          className="w-full py-3 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-blue-100"
-                        >
-                          {order.orderType === "Delivery"
-                            ? "Dispatch Parcel"
-                            : "Mark Served"}
-                        </button>
-                      )}
+                    <div className="flex flex-col gap-2 mt-6">
+                      {status === "Pending" && <button onClick={() => updateStatus(order._id, "Preparing")} className="w-full py-3 bg-orange-500 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg">Accept Order</button>}
+                      {status === "Preparing" && <button onClick={() => updateStatus(order._id, "Served")} className="w-full py-3 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg">Mark Served</button>}
                       {status === "Served" && (
-                        <button
-                          onClick={() => deleteOrder(order._id)}
-                          className="w-full py-3 bg-gray-100 text-gray-500 rounded-2xl font-black text-xs uppercase"
-                        >
-                          Archive
-                        </button>
+                        <>
+                          <button onClick={() => handlePrintBill(order)} className="w-full py-3 bg-green-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg">📄 Print Final Bill</button>
+                          <button onClick={() => deleteOrder(order._id)} className="w-full py-3 bg-gray-100 text-gray-400 rounded-2xl font-black text-xs uppercase">Archive</button>
+                        </>
                       )}
                     </div>
 
-                    {/* --- HIDDEN KOT TEMPLATE --- */}
                     <div id={`kot-${order._id}`} className="hidden">
-                      <center>
-                        <h2 style={{ margin: 0, fontSize: "20px" }}>
-                          {order.orderType === "Delivery"
-                            ? "DELIVERY RECEIPT"
-                            : "KITCHEN ORDER"}
-                        </h2>
-                        <h1 style={{ margin: "5px 0", fontSize: "28px" }}>
-                          {order.orderType === "Delivery"
-                            ? "PARCEL"
-                            : `#${order.tableNumber}`}
-                        </h1>
-                        <p style={{ margin: 0 }}>
-                          --------------------------------
-                        </p>
-                      </center>
-
-                      <table
-                        style={{
-                          width: "100%",
-                          marginTop: "10px",
-                          borderCollapse: "collapse",
-                        }}
-                      >
-                        <thead>
-                          <tr style={{ borderBottom: "2px solid black" }}>
-                            <th style={{ textAlign: "left", padding: "5px 0" }}>
-                              Item
-                            </th>
-                            <th
-                              style={{ textAlign: "right", padding: "5px 0" }}
-                            >
-                              Qty
-                            </th>
-                            <th
-                              style={{ textAlign: "right", padding: "5px 0" }}
-                            >
-                              Price
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {order.items.map((item) => (
-                            <tr key={item._id}>
-                              <td
-                                style={{
-                                  fontWeight: "bold",
-                                  padding: "8px 0",
-                                  fontSize: "14px",
-                                }}
-                              >
-                                {item.menuId?.name || "Item"}
-                              </td>
-                              <td
-                                style={{
-                                  textAlign: "right",
-                                  fontWeight: "bold",
-                                }}
-                              >
-                                x{item.qty}
-                              </td>
-                              <td
-                                style={{
-                                  textAlign: "right",
-                                  fontWeight: "bold",
-                                }}
-                              >
-                                ₹{(item.menuId?.price || 0) * item.qty}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
+                      <div className="center">
+                        <p className="bold large">{order.orderType === "Delivery" ? "PARCEL KOT" : "DINE-IN KOT"}</p>
+                        <p className="bold" style={{fontSize: '32px', margin: '5px 0'}}>{order.orderType === "Delivery" ? "ONLINE" : `TABLE: ${order.tableNumber}`}</p>
+                        <p>ID: #{order._id.slice(-6).toUpperCase()}</p>
+                        <div className="dashed-line"></div>
+                      </div>
+                      <table>
+                        <thead><tr><th>ITEM</th><th style={{textAlign:'center'}}>QTY</th></tr></thead>
+                        <tbody>{order.items.map(i => <tr key={i._id}><td className="bold">{i.menuId?.name}</td><td style={{textAlign:'center'}} className="bold">x{i.qty}</td></tr>)}</tbody>
                       </table>
-
-                      {/* --- TOTAL SECTION WITH DELIVERY CHARGE --- */}
-                      <div
-                        style={{
-                          borderTop: "2px dashed black",
-                          marginTop: "10px",
-                          paddingTop: "10px",
-                        }}
-                      >
-                        {order.orderType === "Delivery" && (
-                          <>
-                            <div
-                              style={{
-                                display: "flex",
-                                justifyContent: "space-between",
-                                fontSize: "14px",
-                                marginBottom: "5px",
-                              }}
-                            >
-                              <span>Item Subtotal:</span>
-                              <span>₹{order.totalAmount - 20}</span>
-                            </div>
-                            <div
-                              style={{
-                                display: "flex",
-                                justifyContent: "space-between",
-                                fontSize: "14px",
-                                marginBottom: "5px",
-                                color: "#000",
-                              }}
-                            >
-                              <span>Delivery Charge:</span>
-                              <span>₹20</span>
-                            </div>
-                          </>
-                        )}
-
-                        <div
-                          style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            fontSize: "20px",
-                            fontWeight: "900",
-                            marginTop: "5px",
-                          }}
-                        >
-                          <span>GRAND TOTAL:</span>
-                          <span>₹{order.totalAmount}</span>
+                      <div className="dashed-line"></div>
+                      <p className="bold">Cust: {order.customerName}</p>
+                      {order.orderType === "Delivery" && (
+                        <div style={{fontSize: '12px'}}>
+                          <p><b>Phone:</b> ${order.phone}</p>
+                          <p><b>Address:</b> ${order.address}</p>
                         </div>
-                      </div>
-
-                      <div
-                        style={{
-                          marginTop: "15px",
-                          fontSize: "13px",
-                          lineHeight: "1.4",
-                        }}
-                      >
-                        <p style={{ margin: "2px 0" }}>
-                          <strong>Customer:</strong> {order.customerName}
-                        </p>
-
-                        {order.orderType === "Delivery" && (
-                          <div
-                            style={{
-                              background: "#f9f9f9",
-                              padding: "5px",
-                              border: "1px solid #eee",
-                              marginTop: "5px",
-                            }}
-                          >
-                            <p style={{ margin: "2px 0" }}>
-                              <strong>Phone:</strong> {order.phone}
-                            </p>
-                            <p style={{ margin: "2px 0" }}>
-                              <strong>Address:</strong> {order.address}
-                            </p>
-                          </div>
-                        )}
-
-                        <div
-                          style={{
-                            marginTop: "10px",
-                            borderTop: "1px solid #eee",
-                            paddingTop: "5px",
-                          }}
-                        >
-                          <p style={{ margin: "2px 0", fontSize: "11px" }}>
-                            <strong>Order ID:</strong> #
-                            {order._id.slice(-6).toUpperCase()}
-                          </p>
-                          <p style={{ margin: "2px 0", fontSize: "11px" }}>
-                            <strong>Time:</strong>{" "}
-                            {new Date(order.createdAt).toLocaleString()}
-                          </p>
-                        </div>
-                      </div>
-
-                      <center>
-                        <p
-                          style={{
-                            marginTop: "20px",
-                            borderTop: "1px solid #000",
-                            paddingTop: "10px",
-                            fontSize: "12px",
-                            fontWeight: "bold",
-                          }}
-                        >
-                          {order.orderType === "Delivery"
-                            ? "SAFE DELIVERY • HAPPY EATING"
-                            : "KITCHEN COPY"}
-                        </p>
-                      </center>
+                      )}
+                      <div className="center" style={{marginTop: '10px', fontSize: '10px'}}><p>SmartMenu Cloud POS</p></div>
                     </div>
                   </div>
                 ))}
@@ -507,6 +303,58 @@ const AdminOrders = () => {
           ))}
         </div>
       </div>
+
+      {showManualModal && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white w-full max-w-4xl h-[85vh] rounded-[40px] shadow-2xl overflow-hidden flex flex-col">
+            <div className="p-8 border-b flex justify-between items-center bg-gray-50">
+              <h2 className="font-black text-2xl uppercase italic tracking-tighter">Counter Billing (POS)</h2>
+              <button onClick={() => setShowManualModal(false)} className="bg-white p-2 rounded-full shadow-sm">✕</button>
+            </div>
+            <div className="flex flex-1 overflow-hidden">
+              <div className="w-3/5 p-8 overflow-y-auto border-r border-dashed">
+                <input type="text" placeholder="🔍 Search Dish..." className="w-full p-4 rounded-2xl bg-gray-100 mb-6 font-bold outline-none ring-0 focus:ring-2 focus:ring-green-500/20" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                <div className="grid grid-cols-2 gap-3">
+                  {menuList.filter(i => i.name.toLowerCase().includes(searchTerm.toLowerCase())).map(item => (
+                    <button key={item._id} onClick={() => addItemToManual(item)} className="text-left p-4 rounded-2xl border-2 border-gray-50 hover:border-green-500 hover:bg-green-50 transition-all flex flex-col justify-between h-24">
+                      <p className="font-bold text-sm text-gray-800 line-clamp-1">{item.name}</p>
+                      <p className="text-lg font-black text-green-600">₹{item.price}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="w-2/5 p-8 bg-gray-50/50 flex flex-col">
+                <div className="space-y-4 mb-6">
+                  <div>
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Table Number</label>
+                    <input type="number" placeholder="E.g. 10" className="w-full p-3 rounded-xl border-2 border-white shadow-sm font-black text-xl outline-none" value={newOrder.tableNumber} onChange={(e) => setNewOrder({...newOrder, tableNumber: e.target.value})} />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-black text-red-400 uppercase tracking-widest block mb-1">Apply Discount (₹)</label>
+                    <input type="number" placeholder="0" className="w-full p-3 rounded-xl border-2 border-red-50 text-red-600 shadow-sm font-black text-xl outline-none" value={newOrder.discount} onChange={(e) => setNewOrder({...newOrder, discount: e.target.value})} />
+                  </div>
+                </div>
+                <div className="flex-1 overflow-y-auto mb-6 pr-2">
+                  <p className="text-[10px] font-black text-gray-400 uppercase mb-4">Current Cart</p>
+                  {newOrder.items.map(item => (
+                    <div key={item.menuId} className="flex justify-between items-center mb-3 bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+                      <div><p className="text-xs font-black">{item.name}</p><p className="text-[10px] text-gray-400">₹{item.price} x {item.qty}</p></div>
+                      <span className="font-black text-sm">₹{item.price * item.qty}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="border-t-2 border-dashed pt-6">
+                  <div className="flex justify-between items-end mb-6">
+                    <span className="font-black text-gray-400 uppercase text-xs">Final Amount</span>
+                    <span className="font-black text-4xl text-gray-900">₹{Math.max(0, newOrder.items.reduce((sum, i) => sum + (i.price * i.qty), 0) - newOrder.discount)}</span>
+                  </div>
+                  <button onClick={handleCreateManualOrder} className="w-full py-5 bg-green-600 text-white rounded-[24px] font-black uppercase tracking-widest shadow-xl hover:bg-green-700 transition-all">🚀 Generate Bill & KOT</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -514,21 +362,13 @@ const AdminOrders = () => {
 const OrderTimer = ({ createdAt }) => {
   const [elapsed, setElapsed] = useState(0);
   useEffect(() => {
-    const calc = () =>
-      setElapsed(Math.floor((new Date() - new Date(createdAt)) / 60000));
+    const calc = () => setElapsed(Math.floor((new Date() - new Date(createdAt)) / 60000));
     calc();
     const interval = setInterval(calc, 30000);
     return () => clearInterval(interval);
   }, [createdAt]);
-  const color =
-    elapsed >= 15 ? "text-red-600 animate-pulse font-black" : "text-gray-400";
-  return (
-    <span
-      className={`text-[10px] font-mono px-2 py-1 bg-gray-50 border rounded-lg w-fit ${color}`}
-    >
-      {elapsed} min ago
-    </span>
-  );
+  const color = elapsed >= 15 ? "text-red-600 animate-pulse font-black" : "text-gray-400";
+  return <span className={`text-[10px] font-mono px-2 py-1 bg-gray-50 border rounded-lg w-fit ${color}`}>{elapsed} min ago</span>;
 };
 
 export default AdminOrders;

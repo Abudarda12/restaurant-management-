@@ -50,7 +50,7 @@ const AdminDashboard = () => {
           Logout
         </button>
       </div>
-      
+
       <div className="mb-8">
         <QRGenerator />
       </div>
@@ -111,6 +111,13 @@ const AdminDashboard = () => {
           className="flex items-center justify-center p-4 bg-white rounded-lg shadow hover:bg-yellow-50 transition border border-yellow-200 text-yellow-700 font-bold"
         >
           💬 Customer Reviews
+        </Link>
+        
+        <Link
+          to="/admin/reports"
+          className="flex items-center justify-center p-4 bg-white rounded-lg shadow hover:bg-purple-50 transition border border-purple-200 text-purple-700 font-bold"
+        >
+          📈 Sales & Tax Reports
         </Link>
       </div>
     </div>

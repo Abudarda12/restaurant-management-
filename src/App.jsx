@@ -13,6 +13,7 @@ import AdminFeedback from "./admin/AdminFeedback";
 import AdminUpdateMenu from "./admin/AdminUpdateMenu";
 import Home from "./pages/Home";
 import NotFound from "./components/NotFound";
+import AdminReports from "./admin/AdminReports";
 function App() {
   return (
     <Routes>
@@ -62,6 +63,15 @@ function App() {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/admin/reports"
+        element={
+          <ProtectedRoute>
+            <AdminReports />
+          </ProtectedRoute>
+        }
+      />
+      
       <Route path="/admin/menu/update/:id" element={<AdminUpdateMenu />} />
     </Routes>
   );
