@@ -59,8 +59,6 @@ const AdminDashboard = () => {
         </button>
       </div>
 
-      
-
       {/* STATS GRID */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <div className="bg-white p-6 rounded-3xl shadow-sm border-b-8 border-blue-500 transition-transform hover:scale-105">
@@ -195,6 +193,12 @@ const AdminDashboard = () => {
           className="flex items-center justify-center p-6 bg-white rounded-3xl shadow-sm hover:bg-purple-50 transition border border-gray-100 text-purple-700 font-black uppercase text-xs tracking-widest"
         >
           📈 Analytics
+        </Link>
+        <Link
+          to="/admin/settings"
+          className="p-6 bg-white rounded-3xl shadow-sm border border-gray-900 text-gray-900 font-black uppercase text-xs text-center hover:bg-black hover:text-white transition-all"
+        >
+          ⚙️ Settings
         </Link>
       </div>
       <div className="mb-8">
