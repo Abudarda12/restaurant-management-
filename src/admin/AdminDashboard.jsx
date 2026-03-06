@@ -59,9 +59,7 @@ const AdminDashboard = () => {
         </button>
       </div>
 
-      <div className="mb-8">
-        <QRGenerator />
-      </div>
+      
 
       {/* STATS GRID */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
@@ -198,6 +196,9 @@ const AdminDashboard = () => {
         >
           📈 Analytics
         </Link>
+      </div>
+      <div className="mb-8">
+        <QRGenerator />
       </div>
     </div>
   );
