@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
 
 const AdminReports = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   // Default to today's date in local time (YYYY-MM-DD)
   const [selectedDate, setSelectedDate] = useState(
-    new Date().toLocaleDateString("en-CA"),
+    new Date().toLocaleDateString("en-CA")
   );
 
   useEffect(() => {
@@ -30,9 +31,28 @@ const AdminReports = () => {
     return orderDateLocal === selectedDate && isServed;
   });
 
+  // --- CHART LOGIC: Grouping Sales by Platform ---
+  const platformStats = dailyOrders.reduce((acc, o) => {
+    const type = o.orderType || "Dining";
+    acc[type] = (acc[type] || 0) + (Number(o.totalAmount) || 0);
+    return acc;
+  }, {});
+
+  const chartData = Object.keys(platformStats).map(key => ({
+    name: key,
+    value: platformStats[key]
+  }));
+
+  const COLORS = {
+    Dining: "#000000",
+    Delivery: "#8B5CF6", 
+    Swiggy: "#F97316",   
+    Zomato: "#EF4444",   
+  };
+
   const totalGrossRevenue = dailyOrders.reduce(
     (sum, o) => sum + (Number(o.totalAmount) || 0),
-    0,
+    0
   );
   const baseRevenue = totalGrossRevenue / 1.05;
   const totalGST = totalGrossRevenue - baseRevenue;
@@ -41,7 +61,7 @@ const AdminReports = () => {
 
   const totalItemsSold = dailyOrders.reduce(
     (sum, o) => sum + o.items.reduce((iSum, item) => iSum + item.qty, 0),
-    0,
+    0
   );
 
   const downloadCSV = () => {
@@ -61,9 +81,8 @@ const AdminReports = () => {
     link.setAttribute("download", `Sales_Report_${selectedDate}.csv`);
     link.click();
   };
-  // Add this function inside your AdminReports component
+
   const downloadMonthlyCSV = () => {
-    // Get the Month and Year from the current selectedDate (e.g., "2024-03")
     const selectedYearMonth = selectedDate.substring(0, 7);
 
     const monthlyOrders = orders.filter((o) => {
@@ -110,6 +129,7 @@ const AdminReports = () => {
     document.body.appendChild(link);
     link.click();
   };
+
   if (loading)
     return (
       <div className="p-10 text-center font-bold">Generating Report...</div>
@@ -117,7 +137,8 @@ const AdminReports = () => {
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen font-sans">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-5xl mx-auto">
+        {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <div>
             <Link
@@ -138,38 +159,55 @@ const AdminReports = () => {
           />
         </div>
 
-        <div className="bg-white rounded-3xl p-8 shadow-xl shadow-gray-200/50 mb-8 border border-gray-100">
-          <p className="text-gray-400 text-xs font-black uppercase tracking-widest mb-1">
-            Gross Collections (Incl. Tax)
-          </p>
-          <h2 className="text-5xl font-black text-gray-900 mb-6">
-            ₹{totalGrossRevenue.toLocaleString("en-IN")}
-          </h2>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+          {/* Revenue Card (Full width on mobile, 2/3 on desktop) */}
+          <div className="lg:col-span-2 bg-white rounded-3xl p-8 shadow-xl shadow-gray-200/50 border border-gray-100 flex flex-col justify-between">
+            <div>
+              <p className="text-gray-400 text-xs font-black uppercase tracking-widest mb-1">
+                Gross Collections (Incl. Tax)
+              </p>
+              <h2 className="text-5xl font-black text-gray-900 mb-6">
+                ₹{totalGrossRevenue.toLocaleString("en-IN")}
+              </h2>
+            </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6 border-t border-dashed border-gray-200">
-            <div>
-              <p className="text-gray-400 text-[10px] font-bold uppercase">
-                Net Sales (Excl. Tax)
-              </p>
-              <p className="text-xl font-black text-blue-600">
-                ₹{baseRevenue.toFixed(2)}
-              </p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6 border-t border-dashed border-gray-200">
+              <div>
+                <p className="text-gray-400 text-[10px] font-bold uppercase">Net Sales (Excl. Tax)</p>
+                <p className="text-xl font-black text-blue-600">₹{baseRevenue.toFixed(2)}</p>
+              </div>
+              <div>
+                <p className="text-gray-400 text-[10px] font-bold uppercase">Total GST (5%)</p>
+                <p className="text-xl font-black text-orange-500">₹{totalGST.toFixed(2)}</p>
+              </div>
+              <div>
+                <p className="text-gray-400 text-[10px] font-bold uppercase">Total Orders</p>
+                <p className="text-xl font-black text-gray-900">{dailyOrders.length}</p>
+              </div>
             </div>
-            <div>
-              <p className="text-gray-400 text-[10px] font-bold uppercase">
-                Total GST (5%)
-              </p>
-              <p className="text-xl font-black text-orange-500">
-                ₹{totalGST.toFixed(2)}
-              </p>
-            </div>
-            <div>
-              <p className="text-gray-400 text-[10px] font-bold uppercase">
-                Total Orders
-              </p>
-              <p className="text-xl font-black text-gray-900">
-                {dailyOrders.length}
-              </p>
+          </div>
+
+          {/* Pie Chart Card (1/3 width on desktop) */}
+          <div className="bg-white rounded-3xl p-6 shadow-xl shadow-gray-200/50 border border-gray-100 flex flex-col items-center">
+            <h3 className="text-xs font-black uppercase tracking-widest mb-4 text-gray-400 text-center">Sales Channel Mix</h3>
+            <div className="w-full h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={chartData}
+                    innerRadius={60}
+                    outerRadius={80}
+                    paddingAngle={5}
+                    dataKey="value"
+                  >
+                    {chartData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[entry.name] || "#ccc"} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                  <Legend iconType="circle" wrapperStyle={{ fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase' }} />
+                </PieChart>
+              </ResponsiveContainer>
             </div>
           </div>
         </div>
@@ -242,7 +280,11 @@ const AdminReports = () => {
                     </td>
                     <td className="p-4 font-bold">{o.customerName}</td>
                     <td className="p-4">
-                      <span className="px-2 py-1 bg-gray-100 rounded text-[10px] font-bold">
+                      <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase border ${
+                        o.orderType === "Swiggy" ? "bg-orange-50 text-orange-600 border-orange-100" : 
+                        o.orderType === "Zomato" ? "bg-red-50 text-red-600 border-red-100" : 
+                        "bg-gray-100 text-gray-700"
+                      }`}>
                         {o.orderType}
                       </span>
                     </td>

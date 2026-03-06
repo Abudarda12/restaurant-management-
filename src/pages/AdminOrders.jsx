@@ -7,6 +7,7 @@ const AdminOrders = () => {
   const [viewFilter, setViewFilter] = useState("All");
   const [showManualModal, setShowManualModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedPlatform, setSelectedPlatform] = useState("Dining");
   const [newOrder, setNewOrder] = useState({ 
     tableNumber: "", 
     customerName: "Walk-in Customer", 
@@ -63,9 +64,11 @@ const AdminOrders = () => {
   };
 
   const handleCreateManualOrder = async () => {
-    if (!newOrder.tableNumber || newOrder.items.length === 0) {
-      return alert("Please select Table Number and add items!");
+    if (selectedPlatform === "Dining" && !newOrder.tableNumber) {
+      return alert("Please select Table Number!");
     }
+    if (newOrder.items.length === 0) return alert("Add at least one item!");
+
     const subtotal = newOrder.items.reduce((sum, i) => sum + i.price * i.qty, 0);
     const finalAmount = Math.max(0, subtotal - Number(newOrder.discount));
 
@@ -75,7 +78,7 @@ const AdminOrders = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...newOrder,
-          orderType: "Dining",
+          orderType: selectedPlatform,
           status: "Preparing",
           totalAmount: finalAmount,
         }),
@@ -83,6 +86,7 @@ const AdminOrders = () => {
       if (res.ok) {
         setShowManualModal(false);
         setNewOrder({ tableNumber: "", customerName: "Walk-in Customer", items: [], discount: 0 });
+        setSelectedPlatform("Dining");
         fetchOrders();
       }
     } catch (err) {
@@ -155,7 +159,8 @@ const AdminOrders = () => {
           <div class="border-top">
             <p><b>Bill:</b> #${order._id.slice(-6).toUpperCase()} <span style="float:right;">${new Date().toLocaleDateString()}</span></p>
             <p><b>Cust:</b> ${order.customerName}</p>
-            ${order.orderType === "Delivery" ? `<p><b>Phone:</b> ${order.phone}</p><p><b>Addr:</b> ${order.address}</p>` : `<p><b>Table:</b> ${order.tableNumber}</p>`}
+            ${order.orderType === "Delivery" ? `<p><b>Phone:</b> ${order.phone}</p><p><b>Addr:</b> ${order.address}</p>` : 
+              (order.orderType === "Dining" ? `<p><b>Table:</b> ${order.tableNumber}</p>` : `<p><b>Platform:</b> ${order.orderType}</p>`)}
           </div>
           <table>
             <thead><tr><th>Item</th><th class="right">Qty</th><th class="right">Price</th></tr></thead>
@@ -211,10 +216,10 @@ const AdminOrders = () => {
             <h1 className="text-4xl font-black text-gray-900 tracking-tight italic uppercase">Orders Console</h1>
           </div>
           <div className="flex gap-4 items-center">
-            <button onClick={() => setShowManualModal(true)} className="bg-green-600 text-white px-6 py-3 rounded-2xl font-black text-sm shadow-xl hover:scale-105 transition-all">➕ NEW COUNTER BILL</button>
+            <button onClick={() => setShowManualModal(true)} className="bg-green-600 text-white px-6 py-3 rounded-2xl font-black text-sm shadow-xl hover:scale-105 transition-all">➕ NEW POS ORDER</button>
             <div className="flex bg-white p-1 rounded-xl shadow-sm border border-gray-200">
-              {["All", "Dining", "Delivery"].map((type) => (
-                <button key={type} onClick={() => setViewFilter(type)} className={`px-4 py-2 rounded-lg text-xs font-black transition-all ${viewFilter === type ? "bg-black text-white" : "text-gray-500 hover:bg-gray-50"}`}>{type}</button>
+              {["All", "Dining", "Delivery", "Swiggy", "Zomato"].map((type) => (
+                <button key={type} onClick={() => setViewFilter(type)} className={`px-4 py-2 rounded-lg text-[10px] font-black transition-all ${viewFilter === type ? "bg-black text-white" : "text-gray-400 hover:bg-gray-50"}`}>{type}</button>
               ))}
             </div>
           </div>
@@ -229,13 +234,25 @@ const AdminOrders = () => {
 
               <div className="space-y-5">
                 {groupedOrders[status].map((order) => (
-                  <div key={order._id} className={`bg-white p-5 rounded-3xl shadow-md border-t-8 transition-all ${order.orderType === "Delivery" ? "border-t-purple-600" : "border-t-slate-900"}`}>
+                  <div key={order._id} className={`bg-white p-5 rounded-3xl shadow-md border-t-8 transition-all ${
+                    order.orderType === "Swiggy" ? "border-t-orange-500" : 
+                    order.orderType === "Zomato" ? "border-t-red-600" : 
+                    order.orderType === "Delivery" ? "border-t-purple-600" : "border-t-slate-900"
+                  }`}>
                     <div className="flex justify-between items-start mb-4">
-                      <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase border ${order.orderType === "Delivery" ? "bg-purple-50 text-purple-700 border-purple-100" : "bg-slate-50 text-slate-700 border-slate-100"}`}>{order.orderType === "Delivery" ? "🛵 Online" : "🍽️ Dine-In"}</span>
+                      <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase border ${
+                        order.orderType === "Swiggy" ? "bg-orange-50 text-orange-600 border-orange-100" : 
+                        order.orderType === "Zomato" ? "bg-red-50 text-red-600 border-red-100" : 
+                        "bg-slate-50 text-slate-700 border-slate-100"
+                      }`}>
+                        {order.orderType === "Swiggy" ? "🧡 Swiggy" : order.orderType === "Zomato" ? "❤️ Zomato" : order.orderType === "Delivery" ? "🛵 Delivery" : "🍽️ Dine-In"}
+                      </span>
                       <button onClick={() => handlePrintKOT(order._id)} className="p-2 bg-gray-50 hover:bg-gray-100 rounded-xl border text-[10px] font-bold">🖨️ KOT</button>
                     </div>
 
-                    <h3 className="font-black text-2xl text-gray-900 mb-1">{order.orderType === "Delivery" ? "Parcel" : `Table #${order.tableNumber}`}</h3>
+                    <h3 className="font-black text-2xl text-gray-900 mb-1 leading-none">
+                        {order.orderType === "Dining" ? `Table #${order.tableNumber}` : "Online Order"}
+                    </h3>
                     
                     <div className="flex flex-col gap-1 mb-3 mt-1">
                       <p className="text-gray-500 text-xs font-bold italic">👤 {order.customerName}</p>
@@ -277,8 +294,10 @@ const AdminOrders = () => {
 
                     <div id={`kot-${order._id}`} className="hidden">
                       <div className="center">
-                        <p className="bold large">{order.orderType === "Delivery" ? "PARCEL KOT" : "DINE-IN KOT"}</p>
-                        <p className="bold" style={{fontSize: '32px', margin: '5px 0'}}>{order.orderType === "Delivery" ? "ONLINE" : `TABLE: ${order.tableNumber}`}</p>
+                        <p className="bold large">{order.orderType.toUpperCase()} KOT</p>
+                        <p className="bold" style={{fontSize: '32px', margin: '5px 0'}}>
+                            {order.orderType === "Dining" ? `TABLE: ${order.tableNumber}` : order.orderType}
+                        </p>
                         <p>ID: #{order._id.slice(-6).toUpperCase()}</p>
                         <div className="dashed-line"></div>
                       </div>
@@ -290,8 +309,8 @@ const AdminOrders = () => {
                       <p className="bold">Cust: {order.customerName}</p>
                       {order.orderType === "Delivery" && (
                         <div style={{fontSize: '12px'}}>
-                          <p><b>Phone:</b> ${order.phone}</p>
-                          <p><b>Address:</b> ${order.address}</p>
+                          <p><b>Phone:</b> {order.phone}</p>
+                          <p><b>Address:</b> {order.address}</p>
                         </div>
                       )}
                       <div className="center" style={{marginTop: '10px', fontSize: '10px'}}><p>SmartMenu Cloud POS</p></div>
@@ -326,9 +345,21 @@ const AdminOrders = () => {
               <div className="w-2/5 p-8 bg-gray-50/50 flex flex-col">
                 <div className="space-y-4 mb-6">
                   <div>
-                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Table Number</label>
-                    <input type="number" placeholder="E.g. 10" className="w-full p-3 rounded-xl border-2 border-white shadow-sm font-black text-xl outline-none" value={newOrder.tableNumber} onChange={(e) => setNewOrder({...newOrder, tableNumber: e.target.value})} />
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Select Platform</label>
+                    <div className="grid grid-cols-3 gap-2">
+                        {["Dining", "Swiggy", "Zomato"].map(plat => (
+                            <button key={plat} onClick={() => setSelectedPlatform(plat)} className={`py-2 rounded-xl text-[10px] font-black border-2 transition-all ${selectedPlatform === plat ? "bg-black text-white border-black" : "bg-white text-gray-400 border-gray-100"}`}>
+                                {plat}
+                            </button>
+                        ))}
+                    </div>
                   </div>
+                  {selectedPlatform === "Dining" && (
+                    <div>
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Table Number</label>
+                        <input type="number" placeholder="E.g. 10" className="w-full p-3 rounded-xl border-2 border-white shadow-sm font-black text-xl outline-none" value={newOrder.tableNumber} onChange={(e) => setNewOrder({...newOrder, tableNumber: e.target.value})} />
+                    </div>
+                  )}
                   <div>
                     <label className="text-[10px] font-black text-red-400 uppercase tracking-widest block mb-1">Apply Discount (₹)</label>
                     <input type="number" placeholder="0" className="w-full p-3 rounded-xl border-2 border-red-50 text-red-600 shadow-sm font-black text-xl outline-none" value={newOrder.discount} onChange={(e) => setNewOrder({...newOrder, discount: e.target.value})} />

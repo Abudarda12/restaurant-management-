@@ -10,7 +10,6 @@ function AdminFeedback() {
       .then((res) => res.json())
       .then((data) => {
         setFeedback(data);
-        console.log("Fetched feedback:", data);
       })
       .catch((err) => {
         console.error("Error fetching feedback:", err);
